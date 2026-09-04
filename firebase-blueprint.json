@@ -1,0 +1,101 @@
+{
+  "entities": {
+    "Profile": {
+      "title": "Profile",
+      "description": "User profile containing role and details.",
+      "type": "object",
+      "properties": {
+        "full_name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["vendor", "buyer"] },
+        "market_hub_id": { "type": "string", "maxLength": 50 },
+        "avatar_url": { "type": "string", "maxLength": 500 },
+        "created_at": { "type": "number" },
+        "updated_at": { "type": "number" }
+      },
+      "required": ["full_name", "email", "role", "created_at", "updated_at"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Product listing from a vendor.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "image_url": { "type": "string", "maxLength": 500 },
+        "category": { "type": "string", "maxLength": 50 },
+        "price_ghs": { "type": "number" },
+        "vendor_id": { "type": "string", "maxLength": 100 },
+        "stock_status": { "type": "boolean" },
+        "audio_listing_url": { "type": "string", "maxLength": 500 },
+        "created_at": { "type": "number" },
+        "updated_at": { "type": "number" }
+      },
+      "required": ["name", "price_ghs", "vendor_id", "stock_status", "created_at", "updated_at"]
+    },
+    "Negotiation": {
+      "title": "Negotiation",
+      "description": "Price negotiation between buyer and vendor.",
+      "type": "object",
+      "properties": {
+        "product_id": { "type": "string", "maxLength": 100 },
+        "buyer_id": { "type": "string", "maxLength": 100 },
+        "vendor_id": { "type": "string", "maxLength": 100 },
+        "current_offer": { "type": "number" },
+        "current_counter_offer": { "type": "number" },
+        "last_actor": { "type": "string", "enum": ["buyer", "vendor"] },
+        "status": { "type": "string", "enum": ["open", "accepted", "rejected"] },
+        "created_at": { "type": "number" },
+        "updated_at": { "type": "number" },
+        "negotiation_history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "timestamp": { "type": "number" },
+              "actor": { "type": "string", "enum": ["buyer", "vendor"] },
+              "offer": { "type": "number" }
+            },
+            "required": ["timestamp", "actor", "offer"]
+          },
+          "maxLength": 50
+        }
+      },
+      "required": ["product_id", "buyer_id", "vendor_id", "current_offer", "last_actor", "status", "created_at", "updated_at", "negotiation_history"]
+    },
+    "Market": {
+      "title": "Market",
+      "description": "A market hub location.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "address": { "type": "string", "maxLength": 200 },
+        "main_categories": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 50 }
+        }
+      },
+      "required": ["name", "latitude", "longitude", "address"]
+    }
+  },
+  "firestore": {
+    "profiles/{userId}": {
+      "schema": { "$ref": "#/entities/Profile" },
+      "description": "User profiles."
+    },
+    "products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Product listings."
+    },
+    "negotiations/{negotiationId}": {
+      "schema": { "$ref": "#/entities/Negotiation" },
+      "description": "Active negotiations."
+    },
+    "markets/{marketId}": {
+      "schema": { "$ref": "#/entities/Market" },
+      "description": "Market hub locations."
+    }
+  }
+}

@@ -1,0 +1,138 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+
+    // -- Validation Helpers --
+    function isValidProfile(data) {
+      return data.keys().hasAll(['full_name', 'email', 'role', 'created_at', 'updated_at']) &&
+             data.full_name is string && data.full_name.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.role in ['vendor', 'buyer', 'rider'] &&
+             data.created_at is number &&
+             data.updated_at is number &&
+             data.get('market_hub_id', '') is string && data.get('market_hub_id', '').size() <= 50 &&
+             data.get('avatar_url', '') is string && data.get('avatar_url', '').size() <= 500;
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'price_ghs', 'vendor_id', 'stock_status', 'created_at', 'updated_at']) &&
+             data.name is string && data.name.size() <= 100 &&
+             data.price_ghs is number && data.price_ghs >= 0 &&
+             data.vendor_id == request.auth.uid &&
+             data.stock_status is bool &&
+             data.created_at is number &&
+             data.updated_at is number &&
+             data.get('stock_quantity', 0) is number && data.get('stock_quantity', 0) >= 0 &&
+             data.get('unit', '') is string && data.get('unit', '').size() <= 20 &&
+             data.get('description', '') is string && data.get('description', '').size() <= 1000 &&
+             data.get('image_url', '') is string && data.get('image_url', '').size() <= 5000000 &&
+             data.get('category', '') is string && data.get('category', '').size() <= 50 &&
+             data.get('audio_listing_url', '') is string && data.get('audio_listing_url', '').size() <= 500;
+    }
+
+    function isValidNegotiation(data) {
+      return data.keys().hasAll(['product_id', 'buyer_id', 'vendor_id', 'current_offer', 'last_actor', 'status', 'created_at', 'updated_at', 'negotiation_history']) &&
+             data.product_id is string && isValidId(data.product_id) &&
+             data.buyer_id is string && isValidId(data.buyer_id) &&
+             data.vendor_id is string && isValidId(data.vendor_id) &&
+             data.current_offer is number && data.current_offer >= 0 &&
+             data.get('current_counter_offer', 0) is number &&
+             data.last_actor in ['buyer', 'vendor'] &&
+             data.status in ['open', 'accepted', 'rejected'] &&
+             data.created_at is number &&
+             data.updated_at is number &&
+             data.negotiation_history is list &&
+             data.negotiation_history.size() <= 50 &&
+             (data.negotiation_history.size() == 0 || (
+               data.negotiation_history[0] is map &&
+               data.negotiation_history[0].keys().hasAll(['timestamp', 'actor', 'offer']) &&
+               data.negotiation_history[0].timestamp is number &&
+               data.negotiation_history[0].actor in ['buyer', 'vendor'] &&
+               data.negotiation_history[0].offer is number
+             ));
+    }
+
+    function isValidMarket(data) {
+      return data.keys().hasAll(['name', 'latitude', 'longitude', 'address']) &&
+             data.name is string && data.name.size() <= 100 &&
+             data.latitude is number &&
+             data.longitude is number &&
+             data.address is string && data.address.size() <= 200 &&
+             ( !('main_categories' in data) || (data.main_categories is list && data.main_categories.size() <= 20 && (data.main_categories.size() == 0 || data.main_categories[0] is string)) );
+    }
+
+    // -- Profiles --
+    match /profiles/{userId} {
+      allow get: if isSignedIn(); // Anyone signed in can read a profile to show name/avatar
+      allow list: if isSignedIn(); // Might need to list vendors
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidId(userId) &&
+                       isValidProfile(incoming());
+      allow update: if isSignedIn() && request.auth.uid == userId &&
+                       isValidProfile(incoming()) && incoming().created_at == existing().created_at &&
+                       incoming().diff(existing()).affectedKeys().hasAny(['full_name', 'avatar_url', 'market_hub_id', 'updated_at', 'role']);
+    }
+
+    // -- Products --
+    match /products/{productId} {
+      allow get: if true; // Public catalog
+      allow list: if true; // Public catalog
+      allow create: if isSignedIn() && isValidId(productId) &&
+                       isValidProduct(incoming()) &&
+                       exists(/databases/$(database)/documents/profiles/$(request.auth.uid)) &&
+                       true;
+      allow update: if isSignedIn() && existing().vendor_id == request.auth.uid &&
+                       isValidProduct(incoming()) &&
+                       incoming().vendor_id == existing().vendor_id &&
+                       incoming().created_at == existing().created_at &&
+                       incoming().diff(existing()).affectedKeys().hasAny(['name', 'description', 'image_url', 'category', 'price_ghs', 'stock_status', 'stock_quantity', 'unit', 'audio_listing_url', 'updated_at']);
+      allow delete: if isSignedIn() && existing().vendor_id == request.auth.uid;
+    }
+
+    // -- Negotiations --
+    match /negotiations/{negotiationId} {
+      allow get: if isSignedIn() && isValidId(negotiationId) && (existing().buyer_id == request.auth.uid || existing().vendor_id == request.auth.uid);
+      allow list: if isSignedIn() && (resource.data.buyer_id == request.auth.uid || resource.data.vendor_id == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(negotiationId) &&
+                       isValidNegotiation(incoming()) &&
+                       incoming().buyer_id == request.auth.uid &&
+                       incoming().last_actor == 'buyer' &&
+                       incoming().status == 'open' &&
+                       exists(/databases/$(database)/documents/products/$(incoming().product_id));
+      allow update: if isSignedIn() &&
+                       isValidNegotiation(incoming()) &&
+                       existing().status == 'open' &&
+                       incoming().buyer_id == existing().buyer_id &&
+                       incoming().vendor_id == existing().vendor_id &&
+                       incoming().product_id == existing().product_id &&
+                       incoming().created_at == existing().created_at &&
+                       (
+                         (request.auth.uid == existing().buyer_id && incoming().last_actor == 'buyer' && incoming().diff(existing()).affectedKeys().hasOnly(['current_counter_offer', 'current_offer', 'last_actor', 'status', 'updated_at', 'negotiation_history'])) ||
+                         (request.auth.uid == existing().vendor_id && incoming().last_actor == 'vendor' && incoming().diff(existing()).affectedKeys().hasOnly(['current_counter_offer', 'current_offer', 'last_actor', 'status', 'updated_at', 'negotiation_history']))
+                       );
+    }
+
+    // -- Markets --
+    match /markets/{marketId} {
+      allow read: if true; // Public markets
+      allow write: if false; // Only admin via Firebase console can add markets initially for security
+    }
+
+    // -- Deliveries --
+    match /deliveries/{deliveryId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+  }
+}
