@@ -22,8 +22,8 @@ export const TutorialOverlay: React.FC = () => {
     },
     {
       id: 'negotiation',
-      title: 'Smart AI Negotiation',
-      subtitle: 'Our AI Assistant handles price haggling 24/7 so you never miss a sale.',
+      title: 'Negotiation & Payments',
+      subtitle: 'Haggle via chat and choose between Paystack or Pay on Delivery upon agreement.',
       duration: 8000
     },
     {

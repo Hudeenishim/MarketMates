@@ -21,6 +21,9 @@ export interface LocationData {
 }
 
 export interface Delivery {
+  payment_timing?: 'before_delivery' | 'on_delivery';
+  payment_status?: 'pending' | 'paid';
+  amount?: number;
   id: string;
   negotiation_id: string;
   vendor_id: string;
@@ -61,6 +64,9 @@ export interface NegotiationEvent {
 }
 
 export interface Negotiation {
+  quantity?: number;
+  payment_status?: 'pending' | 'paid';
+  payment_timing?: 'before_delivery' | 'on_delivery';
   id: string;
   product_id: string;
   buyer_id: string;

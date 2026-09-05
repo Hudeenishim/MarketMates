@@ -5,7 +5,8 @@ import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, arrayUnion } from 'firebase/firestore';
 import { Negotiation, Product, Profile } from '../types';
 import { dummyNegotiations, dummyProducts } from '../lib/dummyData';
-import { MessageCircle, CheckCircle, XCircle, ArrowRight, Mic, MicOff, Search } from 'lucide-react';
+import { MessageCircle, CheckCircle, XCircle, ArrowRight, Mic, MicOff, Search, CreditCard, Phone, Send, Wallet } from 'lucide-react';
+import { usePaystackPayment } from 'react-paystack';
 
 import { ActivityLog } from '../components/ActivityLog';
 
@@ -26,6 +27,55 @@ export const NegotiationCenter: React.FC = () => {
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Paystack Config
+  const selectedNegForPayment = negotiations.find(n => n.id === selectedNegId);
+  const paystackConfig = {
+    reference: (new Date()).getTime().toString(),
+    email: profile?.email || 'buyer@marketmates.com',
+    amount: (selectedNegForPayment?.current_offer || 0) * 100, // Amount in pesewas
+    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_c3fbb39c5b4b1a4a6e5b51a0212f45cc339a0378', // Use dummy test key if missing
+    currency: 'GHS'
+  };
+  const initializePayment = usePaystackPayment(paystackConfig);
+  
+  
+  const handlePayOnDelivery = async () => {
+    if (!selectedNegId) return;
+    if (demoMode && !user) {
+      alert("Selected Pay on Delivery in demo mode!");
+      setNegotiations(prev => prev.map(n => n.id === selectedNegId ? {...n, payment_timing: 'on_delivery'} : n));
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'negotiations', selectedNegId), {
+        payment_timing: 'on_delivery',
+        updated_at: Date.now()
+      });
+      alert('Selected Pay on Delivery!');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handlePaymentSuccess = async (reference: any) => {
+    if (!selectedNegId) return;
+    if (demoMode && !user) {
+      alert("Payment successful in demo mode! Reference: " + reference.reference);
+      setNegotiations(prev => prev.map(n => n.id === selectedNegId ? {...n, payment_status: 'paid', payment_timing: 'before_delivery'} : n));
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'negotiations', selectedNegId), {
+        payment_status: 'paid',
+        payment_timing: 'before_delivery',
+        updated_at: Date.now()
+      });
+      alert('Payment successful!');
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Slider state for counter-offers
   const [counterOfferValue, setCounterOfferValue] = useState<number>(0);
@@ -286,24 +336,28 @@ export const NegotiationCenter: React.FC = () => {
                 <div className="flex items-center gap-3 text-slate-500 text-base sm:text-lg">
                   <span>Negotiating with {selectedNeg.otherPartyName}</span>
                   {selectedNeg.otherPartyPhone ? (
-                    <a href={`tel:${selectedNeg.otherPartyPhone}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full hover:bg-emerald-100 font-bold transition-colors text-sm">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                      Call
+                    <a href={"tel:" + selectedNeg.otherPartyPhone} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 font-bold transition-colors text-sm shadow-md shadow-emerald-200">
+                      <Phone className="w-4 h-4" />
+                      Call {selectedNeg.otherPartyName?.split(' ')[0]}
                     </a>
                   ) : (
-                    <button onClick={() => alert('This user has not provided a phone number.')} className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 font-bold transition-colors text-sm">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                    <button onClick={() => alert('This user has not provided a phone number.')} className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-400 rounded-full font-bold transition-colors text-sm">
+                      <Phone className="w-4 h-4" />
+                      No Phone
                     </button>
                   )}
                 </div>
               </div>
               <div className="text-right flex flex-col justify-center">
                 <div className="text-xs uppercase font-bold text-slate-400 tracking-wider mb-1">Listed Price</div>
-                <div className="text-3xl sm:text-4xl font-bold text-slate-900">₵{selectedNeg.product?.price_ghs}</div>
+                <div className="text-3xl sm:text-4xl font-bold text-slate-900">₵{(selectedNeg.product?.price_ghs || 0) * (selectedNeg.quantity || 1)}</div>
+                <div className="text-xs text-slate-500 font-bold mt-1 text-right">
+                  {selectedNeg.quantity || 1} {selectedNeg.product?.unit || 'unit'} at ₵{selectedNeg.product?.price_ghs}/each
+                </div>
               </div>
             </div>
 
-            <div className="flex-1 p-6 md:p-8 overflow-y-auto">
+            <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-[#F9FAFB] flex flex-col justify-end">
               
               <div className="max-w-xl mx-auto space-y-8">
                 
@@ -351,108 +405,174 @@ export const NegotiationCenter: React.FC = () => {
                   </div>
                 </div>
                 {selectedNeg.status === 'accepted' && (
-                  <div className="mt-8 text-center">
-                    <button
-                      onClick={() => navigate('/deliveries?neg_id=' + selectedNeg.id)}
-                      className="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
-                    >
-                      Arrange Delivery
-                    </button>
+                  <div className="mt-8 text-center flex flex-col gap-4 items-center w-full max-w-sm mx-auto">
+                    {profile?.role === 'buyer' && selectedNeg.payment_status !== 'paid' && !selectedNeg.payment_timing && (
+                      <div className="w-full flex flex-col gap-3">
+                        <p className="text-sm font-bold text-slate-700 mb-2">Choose Payment Method:</p>
+                        <button
+                          onClick={() => {
+                             if (demoMode && !user) {
+                               alert("Paid via demo mode!");
+                               return;
+                             }
+                             initializePayment({onSuccess: handlePaymentSuccess, onClose: () => console.log('closed')});
+                          }}
+                          className="w-full py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200 flex items-center justify-center gap-2"
+                        >
+                          <CreditCard className="w-5 h-5" /> Pay Now (₵{selectedNeg.current_offer})
+                        </button>
+                        <button
+                          onClick={handlePayOnDelivery}
+                          className="w-full py-3 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Wallet className="w-5 h-5" /> Pay on Delivery
+                        </button>
+                      </div>
+                    )}
+
+                    {profile?.role === 'buyer' && selectedNeg.payment_timing === 'on_delivery' && selectedNeg.payment_status !== 'paid' && (
+                      <div className="px-6 py-3 bg-amber-100 text-amber-800 font-bold rounded-xl flex items-center justify-center gap-2 w-full">
+                        <Wallet className="w-5 h-5" /> Payment on Delivery Selected
+                      </div>
+                    )}
+                    
+                    {profile?.role === 'vendor' && selectedNeg.payment_status !== 'paid' && !selectedNeg.payment_timing && (
+                       <div className="px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl w-full">
+                          Waiting for Buyer to choose payment method...
+                       </div>
+                    )}
+
+                    {profile?.role === 'vendor' && selectedNeg.payment_timing === 'on_delivery' && selectedNeg.payment_status !== 'paid' && (
+                       <div className="px-6 py-3 bg-amber-100 text-amber-800 font-bold rounded-xl w-full">
+                          Buyer selected Pay on Delivery.
+                       </div>
+                    )}
+                    
+                    {selectedNeg.payment_status === 'paid' && (
+                      <div className="px-6 py-3 bg-emerald-100 text-emerald-800 font-bold rounded-xl flex items-center justify-center gap-2 w-full">
+                        <CheckCircle className="w-5 h-5" /> Paid Successfully
+                      </div>
+                    )}
+
+                    {((selectedNeg.payment_status === 'paid') || (selectedNeg.payment_timing === 'on_delivery')) && (
+                      <button
+                        onClick={() => navigate('/deliveries?neg_id=' + selectedNeg.id)}
+                        className="w-full py-4 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200 mt-4"
+                      >
+                        Arrange Delivery
+                      </button>
+                    )}
                   </div>
                 )}
 
-                {/* Actions (Only if Open & It's my turn) */}
-                {selectedNeg.status === 'open' && selectedNeg.last_actor !== profile?.role && (
-                  <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-[2rem] shadow-sm mt-8">
-                    <h4 className="text-lg font-bold text-slate-900 mb-6 text-center">Your Response</h4>
-                    
-                    <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                      <button 
-                        onClick={() => handleAction('accept')}
-                        className="flex-1 flex items-center justify-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-semibold transition-colors shadow-sm text-sm"
-                      >
-                        <CheckCircle className="w-5 h-5" />
-                        <span>Accept Offer</span>
-                      </button>
-                      <button 
-                        onClick={() => handleAction('reject')}
-                        className="flex-1 flex items-center justify-center space-x-2 bg-white border-2 border-red-100 text-red-600 hover:bg-red-50 py-3 rounded-xl font-semibold transition-colors text-sm"
-                      >
-                        <XCircle className="w-5 h-5" />
-                        <span>Decline</span>
-                      </button>
-                    </div>
-
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-slate-200"></div>
-                      </div>
-                      <div className="relative flex justify-center text-[10px] uppercase font-bold text-slate-400">
-                        <span className="px-4 bg-white">Or Make Counter Offer</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-8">
-                      <div className="mb-4">
-                        <label className="text-slate-700 font-bold text-sm block mb-2">Your Counter Offer (₵)</label>
-                        <input
-                          type="number"
-                          min={1}
-                          value={counterOfferValue || ''}
-                          onChange={(e) => setCounterOfferValue(Number(e.target.value))}
-                          placeholder="Type your offer amount..."
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#10B981] outline-none text-sm font-bold text-slate-900 transition-all"
-                        />
-                      </div>
-                      
-                      <div className="relative mb-6">
-                        <input
-                          type="text"
-                          value={message}
-                          onChange={(e) => setMessage(e.target.value)}
-                          placeholder="Add a message (optional)"
-                          className="w-full px-4 py-3 pr-20 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#10B981] outline-none text-sm transition-all"
-                        />
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                          <button
-                            onClick={toggleRecording}
-                            className={`p-2 rounded-lg transition-colors ${
-                              isRecording 
-                                ? 'text-red-500 bg-red-50 animate-pulse' 
-                                : 'text-slate-400 hover:text-[#10B981] hover:bg-emerald-50'
-                            }`}
+                {/* Sticky Footer Chat Actions */}
+                {selectedNeg.status === 'open' && (
+                  <div className="sticky bottom-0 bg-white border-t border-slate-100 p-4 sm:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] rounded-b-[2rem] mt-auto">
+                    {selectedNeg.last_actor !== profile?.role ? (
+                      <div className="flex flex-col gap-4">
+                        <div className="flex gap-2 mb-2">
+                          <button 
+                            onClick={() => handleAction('accept')}
+                            className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors shadow-sm shadow-emerald-200"
                           >
-                            {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                            <CheckCircle className="w-5 h-5" /> Accept ₵{selectedNeg.current_offer}
                           </button>
-                          <button
-                            onClick={() => handleAction('chat')}
-                            disabled={!message.trim()}
-                            className="p-2 rounded-lg bg-[#10B981] text-white hover:bg-[#059669] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          <button 
+                            onClick={() => handleAction('reject')}
+                            className="flex-1 bg-red-50 border border-red-100 text-red-600 hover:bg-red-100 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors"
                           >
-                            <ArrowRight className="w-4 h-4" />
+                            <XCircle className="w-5 h-5" /> Decline
+                          </button>
+                        </div>
+                        <div className="relative">
+                           <div className="absolute inset-0 flex items-center">
+                             <div className="w-full border-t border-slate-200"></div>
+                           </div>
+                           <div className="relative flex justify-center text-[10px] uppercase font-bold text-slate-400">
+                             <span className="px-4 bg-white">Or Counter Offer</span>
+                           </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="relative flex-shrink-0 w-28 sm:w-32">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">₵</span>
+                            <input
+                              type="number"
+                              min={1}
+                              value={counterOfferValue || ''}
+                              onChange={(e) => setCounterOfferValue(Number(e.target.value))}
+                              className="w-full pl-8 pr-3 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#10B981] outline-none font-bold text-slate-900 bg-slate-50"
+                              placeholder="Offer"
+                            />
+                          </div>
+                          <div className="relative flex-1">
+                            <input
+                              type="text"
+                              value={message}
+                              onChange={(e) => setMessage(e.target.value)}
+                              placeholder="Message..."
+                              className="w-full pl-4 pr-12 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#10B981] outline-none text-sm bg-slate-50"
+                              onKeyDown={(e) => { if(e.key === 'Enter') handleAction('counter'); }}
+                            />
+                            <button
+                              onClick={toggleRecording}
+                              className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-colors ${
+                                isRecording 
+                                  ? 'text-red-500 bg-red-50 animate-pulse' 
+                                  : 'text-slate-400 hover:text-[#10B981] hover:bg-emerald-50'
+                              }`}
+                            >
+                              {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                            </button>
+                          </div>
+                          <button 
+                            onClick={() => handleAction('counter')}
+                            className="bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 transition-colors shadow-md"
+                          >
+                            <Send className="w-5 h-5" />
                           </button>
                         </div>
                       </div>
-
-                      <button 
-                        onClick={() => handleAction('counter')}
-                        className="w-full flex items-center justify-center space-x-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-900 py-3 rounded-xl font-semibold transition-colors text-sm"
-                      >
-                        <span>Send Counter Offer</span>
-                        <ArrowRight className="w-5 h-5" />
-                      </button>
-                    </div>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        <div className="text-center p-4 rounded-xl bg-amber-50 border border-amber-100">
+                          <div className="text-amber-700 text-sm font-bold flex items-center justify-center gap-2">
+                            <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+                            Waiting for {selectedNeg.otherPartyName} to respond...
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="relative flex-1">
+                            <input
+                              type="text"
+                              value={message}
+                              onChange={(e) => setMessage(e.target.value)}
+                              placeholder="Send a follow-up message..."
+                              className="w-full pl-4 pr-12 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#10B981] outline-none text-sm bg-slate-50"
+                              onKeyDown={(e) => { if(e.key === 'Enter') handleAction('chat'); }}
+                            />
+                            <button
+                              onClick={toggleRecording}
+                              className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-colors ${
+                                isRecording 
+                                  ? 'text-red-500 bg-red-50 animate-pulse' 
+                                  : 'text-slate-400 hover:text-[#10B981] hover:bg-emerald-50'
+                              }`}
+                            >
+                              {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                            </button>
+                          </div>
+                          <button 
+                            onClick={() => handleAction('chat')}
+                            disabled={!message.trim()}
+                            className="bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 transition-colors shadow-md disabled:opacity-50"
+                          >
+                            <Send className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
-                
-                {selectedNeg.status === 'open' && selectedNeg.last_actor === profile?.role && (
-                  <div className="text-center p-8 border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50">
-                    <div className="text-slate-500 text-sm font-medium">
-                      Waiting for {selectedNeg.otherPartyName} to respond to your offer...
-                    </div>
-                  </div>
-                )}
-
               </div>
             </div>
           </>

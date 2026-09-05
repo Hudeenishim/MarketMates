@@ -23,6 +23,7 @@ export const BuyerView: React.FC = () => {
   // Negotiation Modal State
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [offerPrice, setOfferPrice] = useState<number>(0);
+  const [quantity, setQuantity] = useState<number>(1);
   const [offerMessage, setOfferMessage] = useState<string>('');
   const [isOfferRecording, setIsOfferRecording] = useState(false);
   const offerRecognitionRef = useRef<any>(null);
@@ -140,7 +141,8 @@ export const BuyerView: React.FC = () => {
 
   const handleStartNegotiation = (product: Product) => {
     setSelectedProduct(product);
-    setOfferPrice(Math.floor(product.price_ghs * 0.8)); // Default 80% offer
+    setOfferPrice(Math.floor(product.price_ghs * 0.8)); // Default 80% offer for 1 unit
+    setQuantity(1);
     setOfferMessage('');
   };
 
@@ -162,6 +164,7 @@ export const BuyerView: React.FC = () => {
         buyer_id: user.uid,
         vendor_id: selectedProduct.vendor_id,
         current_offer: offerPrice,
+        quantity: quantity,
         last_actor: 'buyer',
         status: 'open',
         created_at: Date.now(),
@@ -317,8 +320,9 @@ export const BuyerView: React.FC = () => {
               
               <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl mb-8 border border-slate-100">
                 <div>
-                  <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Asking Price</div>
-                  <div className="text-xl font-bold text-slate-900">₵{selectedProduct.price_ghs}</div>
+                  <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Asking Price (Total)</div>
+                  <div className="text-xl font-bold text-slate-900">₵{(selectedProduct.price_ghs * quantity).toFixed(2)}</div>
+                  <div className="text-xs text-slate-500 font-bold mt-1">₵{selectedProduct.price_ghs} / {selectedProduct.unit || 'unit'}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-[10px] uppercase font-bold text-emerald-600 mb-1">Your Offer</div>
@@ -327,9 +331,17 @@ export const BuyerView: React.FC = () => {
               </div>
 
               <div className="space-y-6">
+                <div className="mb-6 flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <label className="text-sm font-bold text-slate-700">Quantity Required:</label>
+                  <div className="flex items-center gap-4">
+                    <button onClick={() => { setQuantity(Math.max(1, quantity - 1)); setOfferPrice(Math.floor(selectedProduct.price_ghs * Math.max(1, quantity - 1) * 0.8)); }} className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-full font-bold text-slate-700">-</button>
+                    <span className="font-bold text-lg text-slate-900">{quantity}</span>
+                    <button onClick={() => { setQuantity(Math.min(selectedProduct.stock_quantity || 999, quantity + 1)); setOfferPrice(Math.floor(selectedProduct.price_ghs * Math.min(selectedProduct.stock_quantity || 999, quantity + 1) * 0.8)); }} className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-full font-bold text-slate-700">+</button>
+                  </div>
+                </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Type or slide to adjust your offer (₵)
+                    Type or slide to adjust your total offer (₵)
                   </label>
                   <input
                     type="number"
@@ -341,15 +353,15 @@ export const BuyerView: React.FC = () => {
                   />
                   <input 
                     type="range" 
-                    min={Math.floor(selectedProduct.price_ghs * 0.3)} 
-                    max={selectedProduct.price_ghs} 
+                    min={Math.floor(selectedProduct.price_ghs * quantity * 0.3)} 
+                    max={selectedProduct.price_ghs * quantity} 
                     value={offerPrice}
                     onChange={(e) => setOfferPrice(Number(e.target.value))}
                     className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#10B981]"
                   />
                   <div className="flex justify-between text-xs text-slate-400 mt-2 font-bold mb-6">
-                    <span>₵{Math.floor(selectedProduct.price_ghs * 0.3)} (30%)</span>
-                    <span>₵{selectedProduct.price_ghs} (Full)</span>
+                    <span>₵{Math.floor(selectedProduct.price_ghs * quantity * 0.3)} (30%)</span>
+                    <span>₵{selectedProduct.price_ghs * quantity} (Full)</span>
                   </div>
 
                   <div className="relative">

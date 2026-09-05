@@ -81,7 +81,7 @@ service cloud.firestore {
                        isValidProfile(incoming());
       allow update: if isSignedIn() && request.auth.uid == userId &&
                        isValidProfile(incoming()) && incoming().created_at == existing().created_at &&
-                       incoming().diff(existing()).affectedKeys().hasAny(['full_name', 'avatar_url', 'market_hub_id', 'updated_at', 'role']);
+                       incoming().diff(existing()).affectedKeys().hasAny(['full_name', 'avatar_url', 'market_hub_id', 'updated_at', 'role', 'phone_number']);
     }
 
     // -- Products --
@@ -112,14 +112,14 @@ service cloud.firestore {
                        exists(/databases/$(database)/documents/products/$(incoming().product_id));
       allow update: if isSignedIn() &&
                        isValidNegotiation(incoming()) &&
-                       existing().status == 'open' &&
+                       (existing().status == 'open' || existing().status == 'accepted') &&
                        incoming().buyer_id == existing().buyer_id &&
                        incoming().vendor_id == existing().vendor_id &&
                        incoming().product_id == existing().product_id &&
                        incoming().created_at == existing().created_at &&
                        (
-                         (request.auth.uid == existing().buyer_id && incoming().last_actor == 'buyer' && incoming().diff(existing()).affectedKeys().hasOnly(['current_counter_offer', 'current_offer', 'last_actor', 'status', 'updated_at', 'negotiation_history'])) ||
-                         (request.auth.uid == existing().vendor_id && incoming().last_actor == 'vendor' && incoming().diff(existing()).affectedKeys().hasOnly(['current_counter_offer', 'current_offer', 'last_actor', 'status', 'updated_at', 'negotiation_history']))
+                         (request.auth.uid == existing().buyer_id && incoming().diff(existing()).affectedKeys().hasOnly(['current_counter_offer', 'current_offer', 'last_actor', 'status', 'updated_at', 'negotiation_history', 'payment_status', 'payment_timing', 'quantity'])) ||
+                         (request.auth.uid == existing().vendor_id && incoming().diff(existing()).affectedKeys().hasOnly(['current_counter_offer', 'current_offer', 'last_actor', 'status', 'updated_at', 'negotiation_history', 'payment_status', 'payment_timing', 'quantity']))
                        );
     }
 

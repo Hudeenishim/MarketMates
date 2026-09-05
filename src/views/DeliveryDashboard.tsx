@@ -282,6 +282,9 @@ export const DeliveryDashboard: React.FC = () => {
           vendor_id: activeNegotiation.vendor_id,
           buyer_id: activeNegotiation.buyer_id,
           status: 'pending',
+          payment_timing: activeNegotiation.payment_timing || 'before_delivery',
+          payment_status: activeNegotiation.payment_status || 'pending',
+          amount: (activeNegotiation.current_offer || 0) * (activeNegotiation.quantity || 1),
           created_at: Date.now(),
           updated_at: Date.now()
         };

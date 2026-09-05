@@ -123,7 +123,7 @@ export const RiderDashboard: React.FC = () => {
           pickup_location: { lat: 5.5837, lng: -0.1970 },
           delivery_location: { lat: 5.6137, lng: -0.1670 },
           created_at: Date.now(),
-          updated_at: Date.now()
+          updated_at: Date.now(), payment_timing: 'on_delivery', payment_status: 'pending', amount: 120
         }
       ];
       setAvailableDeliveries(dummyPending);
