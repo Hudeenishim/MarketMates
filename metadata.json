@@ -1,5 +1,5 @@
 {
-  "name": "MarketMates",
+  "name": "Market Mates",
   "description": "Digital marketplace for vendors and buyers",
   "requestFramePermissions": ["microphone", "camera", "geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

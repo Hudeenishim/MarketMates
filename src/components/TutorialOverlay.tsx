@@ -179,7 +179,7 @@ export const TutorialOverlay: React.FC = () => {
 const SceneVoiceListing = () => (
   <div className="w-full h-full bg-[#F2F2F7] flex flex-col text-left font-sans">
     <div className="bg-slate-900 text-white p-4 flex justify-between items-center z-10 shadow-md shrink-0">
-      <div className="font-bold text-lg">MarketMates</div>
+      <div className="font-bold text-lg">Market Mates</div>
       <div className="bg-slate-800 px-3 py-1 rounded-full text-xs font-bold text-slate-300">Vendor</div>
     </div>
     <div className="p-4 flex-1 flex flex-col gap-4">
@@ -236,7 +236,7 @@ const SceneVoiceListing = () => (
 const SceneBrowsing = () => (
   <div className="w-full h-full bg-[#F2F2F7] flex flex-col text-left font-sans">
     <div className="bg-slate-900 text-white p-4 flex justify-between items-center z-10 shadow-md shrink-0">
-      <div className="font-bold text-lg">MarketMates</div>
+      <div className="font-bold text-lg">Market Mates</div>
       <div className="bg-slate-800 px-3 py-1 rounded-full text-xs font-bold text-slate-300">Buyer</div>
     </div>
     <div className="p-4 flex-1 flex flex-col gap-4">
@@ -334,7 +334,7 @@ const SceneNegotiation = () => (
 const SceneDelivery = () => (
   <div className="w-full h-full bg-[#F2F2F7] flex flex-col text-left font-sans">
     <div className="bg-slate-900 text-white p-4 flex justify-between items-center z-10 shadow-md shrink-0">
-      <div className="font-bold text-lg">MarketMates</div>
+      <div className="font-bold text-lg">Market Mates</div>
       <div className="bg-slate-800 px-3 py-1 rounded-full text-xs font-bold text-slate-300">Delivery</div>
     </div>
     

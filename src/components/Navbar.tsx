@@ -48,7 +48,7 @@ export const Navbar: React.FC = () => {
           <Link to={profile?.role === 'vendor' ? '/vendor' : profile?.role === 'buyer' ? '/buyer' : '/rider'} className="flex items-center gap-3 group">
             <Logo size="md" variant="primary" className="transition-transform group-hover:scale-105" />
             <span className="text-xl font-bold tracking-tight text-slate-900 hidden sm:block">
-              MarketMates
+              Market Mates
             </span>
           </Link>
         </div>

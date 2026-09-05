@@ -102,7 +102,7 @@ export const CustomerServiceView: React.FC = () => {
             <div>
               <h4 className="font-bold text-slate-800 text-sm mb-1">Are my payments secure?</h4>
               <p className="text-sm text-slate-600 leading-relaxed">
-                MarketMates currently facilitates the negotiation process. Final payments are handled directly between you and the vendor upon meetup or delivery.
+                Market Mates currently facilitates the negotiation process. Final payments are handled directly between you and the vendor upon meetup or delivery.
               </p>
             </div>
           </div>

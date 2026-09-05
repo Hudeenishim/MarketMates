@@ -17,7 +17,7 @@ export const AboutView: React.FC = () => {
         </div>
         <h1 className="text-4xl sm:text-5xl font-black text-slate-900 mb-6">How to Use</h1>
         <p className="text-lg text-slate-600 max-w-2xl leading-relaxed px-4">
-          MarketMates brings the traditional market negotiation experience online. Whether you are looking to buy local goods at a fair price or sell your inventory with ease, our platform makes it simple.
+          Market Mates brings the traditional market negotiation experience online. Whether you are looking to buy local goods at a fair price or sell your inventory with ease, our platform makes it simple.
         </p>
       </div>
 

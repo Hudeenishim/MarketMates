@@ -128,7 +128,7 @@ export const LoginView: React.FC = () => {
         <div className="w-full p-4 py-8">
           <div className="max-w-3xl w-full mx-auto bg-white rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col justify-center p-6 sm:p-12">
             <h2 className="text-2xl sm:text-3xl font-bold text-center text-slate-900 mb-2 sm:mb-3">Choose Your Path</h2>
-        <p className="text-slate-500 text-center mb-6 sm:mb-10 text-base sm:text-lg">How will you be using MarketMates?</p>
+        <p className="text-slate-500 text-center mb-6 sm:mb-10 text-base sm:text-lg">How will you be using Market Mates?</p>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           <button
