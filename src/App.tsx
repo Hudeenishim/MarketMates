@@ -55,45 +55,45 @@ export default function App() {
           <main className="flex-1 min-h-0 max-w-[2000px] w-full mx-auto p-4 sm:p-6 lg:p-8 pb-32 md:pb-8 flex flex-col overflow-y-auto overflow-x-hidden custom-scrollbar">
             <div className="flex-1 shrink-0 flex flex-col w-full">
               <Routes>
-              <Route path="/login" element={<LoginView />} />
-              <Route path="/vendor" element={
-                <ProtectedRoute allowedRole="vendor">
-                  <VendorDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/buyer" element={
-                <ProtectedRoute allowedRole="buyer">
-                  <BuyerView />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/rider" element={
-                <ProtectedRoute allowedRole="rider">
-                  <RiderDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/deliveries" element={
-                <ProtectedRoute>
-                  <DeliveryDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/negotiations" element={
-                <ProtectedRoute>
-                  <NegotiationCenter />
-                </ProtectedRoute>
-              } />
-                            <Route path="/about" element={
-                <ProtectedRoute>
-                  <AboutView />
-                </ProtectedRoute>
-              } />
-              <Route path="/support" element={
-                <ProtectedRoute>
-                  <CustomerServiceView />
-                </ProtectedRoute>
-              } />
-              <Route path="/" element={<Navigate to="/login" replace />} />
-            </Routes>
+                <Route path="/login" element={<LoginView />} />
+                <Route path="/vendor" element={
+                  <ProtectedRoute allowedRole="vendor">
+                    <VendorDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/buyer" element={
+                  <ProtectedRoute allowedRole="buyer">
+                    <BuyerView />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/rider" element={
+                  <ProtectedRoute allowedRole="rider">
+                    <RiderDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/deliveries" element={
+                  <ProtectedRoute>
+                    <DeliveryDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/negotiations" element={
+                  <ProtectedRoute>
+                    <NegotiationCenter />
+                  </ProtectedRoute>
+                } />
+                <Route path="/about" element={
+                  <ProtectedRoute>
+                    <AboutView />
+                  </ProtectedRoute>
+                } />
+                <Route path="/support" element={
+                  <ProtectedRoute>
+                    <CustomerServiceView />
+                  </ProtectedRoute>
+                } />
+                <Route path="/" element={<Navigate to="/login" replace />} />
+              </Routes>
             </div>
             {/* Mobile bottom nav spacer */}
             <div className="h-40 shrink-0 md:hidden w-full"></div>
